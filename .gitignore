@@ -2,3 +2,7 @@
 *.opendb
 *.db
 *.db
+*.obj
+*.log
+*.pdb
+*.tlog
