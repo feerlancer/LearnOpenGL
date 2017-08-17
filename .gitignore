@@ -6,3 +6,5 @@
 *.log
 *.pdb
 *.tlog
+*.tlog
+*.pdb
