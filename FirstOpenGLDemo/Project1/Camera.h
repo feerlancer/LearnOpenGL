@@ -26,6 +26,9 @@ public:
 	glm::vec3 getPos() {
 		return m_CameraPos;
 	}
+	glm::vec3 getFront() {
+		return m_CameraTargetReverseDirection;
+	}
 private:
 	bool m_Fly;
 	float m_ScreenWidth;

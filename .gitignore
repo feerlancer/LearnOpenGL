@@ -8,3 +8,10 @@
 *.tlog
 *.tlog
 *.pdb
+*.pdb
+*.ilk
+*.exe
+*.tlog
+*.db
+*.pdb
+*.idb

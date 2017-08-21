@@ -353,6 +353,7 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 
 	unsigned int ironWoodTexture = loadTextureFromFile("../../Resources/Textures/container2.png", 0);
+	unsigned int ironWoodSpecualrTexture = loadTextureFromFile("../../Resources/Textures/container2_specular.png", 0);
 	//renderLoop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -422,20 +423,45 @@ int main()
 		ObjectProgram.setMat4("projection", projection);
 		ObjectProgram.setMat4("view", view);
 
+		//ObjectProgram.setVec3("light.worldPos", lightPos);
+		ObjectProgram.setVec3("light.worldPos", g_Camera.getPos());
+		ObjectProgram.setVec3("light.worldDirection", g_Camera.getFront());
+		ObjectProgram.setFloat("light.cutOffCos", glm::cos(glm::radians(12.5f)));
+		ObjectProgram.setFloat("light.outCutOffCos", glm::cos(glm::radians(17.5f)));
+
 		ObjectProgram.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
 		ObjectProgram.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken the light a bit to fit the scene
 		ObjectProgram.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
+		ObjectProgram.setFloat("light.constant", 1.0f);
+		ObjectProgram.setFloat("light.linear", 0.09f);
+		ObjectProgram.setFloat("light.quadratic", 0.032f);
+
 		ObjectProgram.setInt("material.diffuse", 0);
-		ObjectProgram.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+		ObjectProgram.setInt("material.specular", 1);
 		ObjectProgram.setFloat("material.shininess", 32.0f);
-		ObjectProgram.setVec3("lightWorldPos", lightPos);
+		ObjectProgram.setVec3("worldCameraPos", g_Camera.getPos());
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, ironWoodTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, ironWoodSpecualrTexture);
+
 
 		glBindVertexArray(VAO[2]);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		for (int i = 0; i < (sizeof(cubePositions) / sizeof(vec3)); ++i)
+		{
+
+			model = glm::translate(mat4(1), cubePositions[i]);
+
+			model = glm::rotate(model, radians(float(20 * i)), glm::vec3(1.0f, 0.3f, 0.5f));
+
+			ObjectProgram.setMat4("model", model);
+
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 #endif
 
 		//swap back buffer
