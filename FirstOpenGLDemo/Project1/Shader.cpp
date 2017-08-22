@@ -42,11 +42,11 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 
 	glShaderSource(vertexShader, 1, &vShaderCode, NULL);
 	glCompileShader(vertexShader);
-	checkCompilationError(vertexShader);
+	checkCompilationError(vertexShader, vertexPath);
 
 	glShaderSource(fragmentShader, 1, &fShaderCode, NULL);
 	glCompileShader(fragmentShader);
-	checkCompilationError(fragmentShader);
+	checkCompilationError(fragmentShader, fragmentPath);
 
 	//Shader program
 	ID = glCreateProgram();
@@ -109,7 +109,7 @@ void Shader::setMat4(const char * name, const glm::mat4& value)
 	glUniformMatrix4fv(location, 1, GL_FALSE, value_ptr(value));
 }
 
-void Shader::checkCompilationError(unsigned int shader)
+void Shader::checkCompilationError(unsigned int shader,const char* shaderFilePath)
 {
 	int success;
 	char infoLog[1024];
@@ -117,7 +117,7 @@ void Shader::checkCompilationError(unsigned int shader)
 	if (!success)
 	{
 		glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-		cout << "ERROR::shader compilatin failed!\n" << infoLog << endl;
+		cout << "ERROR:: shader "<< shaderFilePath <<" compilatin failed!\n" << infoLog << endl;
 	}
 	assert(success);
 }

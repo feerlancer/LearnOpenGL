@@ -13,7 +13,7 @@ public:
 	void setVec3(const char * name, const glm::vec3 value);
 	void setMat4(const char * name, const glm::mat4 & value);
 private:
-	void checkCompilationError(unsigned int shader);
+	void checkCompilationError(unsigned int shader, const char* shaderFilePath);
 	void checkLinkError();
 	void checkIsProgramBound();
 	int getUniformLocation(const char * name);

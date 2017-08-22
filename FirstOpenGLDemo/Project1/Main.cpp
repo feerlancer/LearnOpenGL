@@ -13,6 +13,13 @@
 using namespace glm;
 using namespace std;
 
+//#define DISABLE_DIRECTIONAL_LIGHT
+//#define DISABLE_POINT_LIGHT
+//#define DISABLE_SPOT_LIGHT
+
+
+
+
 float mixValue = 0.2;
 #define screenWidth  800.f
 #define screenHeight 600.f
@@ -23,6 +30,7 @@ float deltaTime = 0;
 Camera g_Camera;
 
 #define VAO_NUMBER 3
+#define NR_POINT_LIGHT 4
 
 float g_vertices[36 * 5] =
 {
@@ -318,8 +326,7 @@ int main()
 	//prepare render-----------------------------------------------------------------------------------------------------------------------
 	Shader shaderProgram("ShaderCode/FirstDemoVS.glsl", "ShaderCode/FirstDemoPS.glsl");
 	Shader LampProgram("ShaderCode/LocalToClipVS.glsl", "ShaderCode/LampPS.glsl");
-	Shader ObjectProgram("ShaderCode/ObjectLightingVS.glsl", "ShaderCode/ObjectLightingPS.glsl");
-	//Shader ObjectProgram("ShaderCode/ObjectLightingGourandVS.glsl", "ShaderCode/ObjectLightingGourandPS.glsl");
+	Shader ObjectProgram("ShaderCode/MultiLightingVS.glsl", "ShaderCode/MultiLightingPS.glsl");
 	glm::vec3 cubePositions[] = 
 	{
 		glm::vec3(0.0f,  0.0f,  0.f),
@@ -334,7 +341,13 @@ int main()
 		glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
 
-	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+	//glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+	glm::vec3 pointLightPositions[] = {
+		glm::vec3(0.7f,  0.2f,  2.0f),
+		glm::vec3(2.3f, -3.3f, -4.0f),
+		glm::vec3(-4.0f,  2.0f, -12.0f),
+		glm::vec3(0.0f,  0.0f, -3.0f)
+	};
 
 	unsigned int VAO[VAO_NUMBER];
 	prepareVAOs(VAO);
@@ -405,16 +418,19 @@ int main()
 #else
 		//light scene
 
-		//Lamp_____________________________________________________________________________
+		//Lamps_____________________________________________________________________________
 		LampProgram.use();
-		model = glm::mat4(1);
-		model = glm::translate(model, lightPos);
-		model = glm::scale(model, glm::vec3(0.2f));
-		LampProgram.setMat4("model", model);
 		LampProgram.setMat4("projection", projection);
-		LampProgram.setMat4("view", view);
 		glBindVertexArray(VAO[1]);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		for (int i = 0; i < NR_POINT_LIGHT; ++i)
+		{
+			LampProgram.setMat4("view", view);
+			model = glm::mat4(1);
+			model = glm::translate(model, pointLightPositions[i]);
+			model = glm::scale(model, glm::vec3(0.2f));
+			LampProgram.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
 		//cube_____________________________________________________________________________
 		ObjectProgram.use();
@@ -423,20 +439,65 @@ int main()
 		ObjectProgram.setMat4("projection", projection);
 		ObjectProgram.setMat4("view", view);
 
-		//ObjectProgram.setVec3("light.worldPos", lightPos);
-		ObjectProgram.setVec3("light.worldPos", g_Camera.getPos());
-		ObjectProgram.setVec3("light.worldDirection", g_Camera.getFront());
-		ObjectProgram.setFloat("light.cutOffCos", glm::cos(glm::radians(12.5f)));
-		ObjectProgram.setFloat("light.outCutOffCos", glm::cos(glm::radians(17.5f)));
+#ifndef DISABLE_DIRECTIONAL_LIGHT
+		//directional light param
+		ObjectProgram.setVec3("directionalLight.direction", -0.2f, -1.0f, -0.3f);
 
-		ObjectProgram.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-		ObjectProgram.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken the light a bit to fit the scene
-		ObjectProgram.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+		ObjectProgram.setVec3("directionalLight.ambient", 0.05f, 0.05f, 0.05f);
+		ObjectProgram.setVec3("directionalLight.diffuse", 0.4f, 0.4f, 0.4f);
+		ObjectProgram.setVec3("directionalLight.specular", 0.5f, 0.5f, 0.5f);
+#endif // !DISABLE_DIRECTIONAL_LIGHT
 
-		ObjectProgram.setFloat("light.constant", 1.0f);
-		ObjectProgram.setFloat("light.linear", 0.09f);
-		ObjectProgram.setFloat("light.quadratic", 0.032f);
+#ifndef DISABLE_POINT_LIGHT
+		// point light 1
+		ObjectProgram.setVec3("pointLights[0].position", pointLightPositions[0]);
+		ObjectProgram.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
+		ObjectProgram.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+		ObjectProgram.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+		ObjectProgram.setFloat("pointLights[0].constant", 1.0f);
+		ObjectProgram.setFloat("pointLights[0].linear", 0.09);
+		ObjectProgram.setFloat("pointLights[0].quadratic", 0.032);
+		// point light 2
+		ObjectProgram.setVec3("pointLights[1].position", pointLightPositions[1]);
+		ObjectProgram.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
+		ObjectProgram.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+		ObjectProgram.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+		ObjectProgram.setFloat("pointLights[1].constant", 1.0f);
+		ObjectProgram.setFloat("pointLights[1].linear", 0.09);
+		ObjectProgram.setFloat("pointLights[1].quadratic", 0.032);
+		// point light 3
+		ObjectProgram.setVec3("pointLights[2].position", pointLightPositions[2]);
+		ObjectProgram.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
+		ObjectProgram.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
+		ObjectProgram.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
+		ObjectProgram.setFloat("pointLights[2].constant", 1.0f);
+		ObjectProgram.setFloat("pointLights[2].linear", 0.09);
+		ObjectProgram.setFloat("pointLights[2].quadratic", 0.032);
+		// point light 4
+		ObjectProgram.setVec3("pointLights[3].position", pointLightPositions[3]);
+		ObjectProgram.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
+		ObjectProgram.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+		ObjectProgram.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+		ObjectProgram.setFloat("pointLights[3].constant", 1.0f);
+		ObjectProgram.setFloat("pointLights[3].linear", 0.09);
+		ObjectProgram.setFloat("pointLights[3].quadratic", 0.032);
+#endif // !DISABLE_POINT_LIGHT
 
+#ifndef DISABLE_SPOT_LIGHT
+		//spot light param
+		ObjectProgram.setVec3("spotLight.position", g_Camera.getPos());
+		ObjectProgram.setVec3("spotLight.direction", g_Camera.getFront());
+		ObjectProgram.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+		ObjectProgram.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+		ObjectProgram.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+		ObjectProgram.setFloat("spotLight.constant", 1.0f);
+		ObjectProgram.setFloat("spotLight.linear", 0.09);
+		ObjectProgram.setFloat("spotLight.quadratic", 0.032);
+		ObjectProgram.setFloat("spotLight.cutOffCos", glm::cos(glm::radians(12.5f)));
+		ObjectProgram.setFloat("spotLight.outerCutOffCos", glm::cos(glm::radians(18.0f)));
+#endif // !DISABLE_SPOT_LIGHT
+
+		//material param
 		ObjectProgram.setInt("material.diffuse", 0);
 		ObjectProgram.setInt("material.specular", 1);
 		ObjectProgram.setFloat("material.shininess", 32.0f);
