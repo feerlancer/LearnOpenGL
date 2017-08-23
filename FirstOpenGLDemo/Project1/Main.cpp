@@ -5,7 +5,7 @@
 #include "Factory.h"
 #include <vector>
 #include<map>
-
+#include"Model.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -28,6 +28,9 @@ float lastFrameTime = 0;
 float deltaTime = 0;
 
 Camera g_Camera;
+
+bool g_EnableFlashLight = false;
+bool g_IsHoldFlashLightKey = 0;
 
 #define VAO_NUMBER 3
 #define NR_POINT_LIGHT 4
@@ -131,42 +134,24 @@ unsigned int g_indices[6] =
 
 void test()
 {
-	singleton::CreateInstance();
-	singleton::GetInstance();
-	singleton::DestroyInstance();
-	vector<int> VA;
-	VA.reserve(10 * sizeof(int));
-	for (int i = 0; i < 10; ++i)
-	{
-		VA.push_back(i);
-	}
-	cout << "VA: "<<VA[3] << endl;
-	vector<int>::iterator a = VA.begin();
-	for (int i = 0; i < 1000; ++i)
-	{
-		//VA.push_back(53456);
-	}
 
-	for (; a != VA.end(); ++a)
-	{
-
-	}
-	//cout << "a: " << *a << endl;
-
-
-	map<const char*, int> amap;
-	amap["nima"] = 3;
-	amap["gsfd"] = 5;
-	cout << amap["nima"] << endl;
-	amap.insert(make_pair("guo", 8));
-	auto it = amap.find("grte");
-	if (it != amap.end()) {
-		cout << "find " << it->second << endl;
-	}
 }
 
 void processInput(GLFWwindow* window)
 {
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+	{
+		if (!g_IsHoldFlashLightKey)
+		{
+			g_EnableFlashLight = !g_EnableFlashLight;
+			g_IsHoldFlashLightKey = true;
+		}
+	}
+	else
+	{
+		g_IsHoldFlashLightKey = false;
+	}
+
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
@@ -367,6 +352,7 @@ int main()
 
 	unsigned int ironWoodTexture = loadTextureFromFile("../../Resources/Textures/container2.png", 0);
 	unsigned int ironWoodSpecualrTexture = loadTextureFromFile("../../Resources/Textures/container2_specular.png", 0);
+	Model ourModel("../../Resources/objects/nanosuit/nanosuit.obj");
 	//renderLoop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -381,41 +367,11 @@ int main()
 		glClearColor(0.2f, 0.3f, .3f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
+		model = glm::mat4(1);
 		view = g_Camera.GetWorldToViewMatrix();
 		projection = g_Camera.GetProjectionMatrix();
 
-#if 0
-		//multi cubes scene
-		shaderProgram.use();
-		shaderProgram.setInt("outTexture", 0);
-		shaderProgram.setInt("outTexture1", 1);
-		shaderProgram.setMat4("projection", projection);
-		shaderProgram.setMat4("view", view);
-
-		//draw
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
-
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, texture1);
-
-		glBindVertexArray(VAO[0]);
-		int rCount = 0;
-		for (int i = 0; i < (sizeof(cubePositions) / sizeof(vec3));++i)
-		{
-				
-			model = glm::translate(mat4(1), cubePositions[i]);
-
-			model = glm::rotate(model, radians(float(20*i)), glm::vec3(1.0f, 0.3f, 0.5f));
-
-			shaderProgram.setMat4("model", model);
-
-			shaderProgram.setFloat("mixValue", mixValue);
-
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-			//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		}
-#else
+#if 1
 		//light scene
 
 		//Lamps_____________________________________________________________________________
@@ -455,74 +411,92 @@ int main()
 		ObjectProgram.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
 		ObjectProgram.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
 		ObjectProgram.setFloat("pointLights[0].constant", 1.0f);
-		ObjectProgram.setFloat("pointLights[0].linear", 0.09);
-		ObjectProgram.setFloat("pointLights[0].quadratic", 0.032);
+		ObjectProgram.setFloat("pointLights[0].linear", 0.09f);
+		ObjectProgram.setFloat("pointLights[0].quadratic", 0.032f);
 		// point light 2
 		ObjectProgram.setVec3("pointLights[1].position", pointLightPositions[1]);
 		ObjectProgram.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
 		ObjectProgram.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
 		ObjectProgram.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
 		ObjectProgram.setFloat("pointLights[1].constant", 1.0f);
-		ObjectProgram.setFloat("pointLights[1].linear", 0.09);
-		ObjectProgram.setFloat("pointLights[1].quadratic", 0.032);
+		ObjectProgram.setFloat("pointLights[1].linear", 0.09f);
+		ObjectProgram.setFloat("pointLights[1].quadratic", 0.032f);
 		// point light 3
 		ObjectProgram.setVec3("pointLights[2].position", pointLightPositions[2]);
 		ObjectProgram.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
 		ObjectProgram.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
 		ObjectProgram.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
 		ObjectProgram.setFloat("pointLights[2].constant", 1.0f);
-		ObjectProgram.setFloat("pointLights[2].linear", 0.09);
-		ObjectProgram.setFloat("pointLights[2].quadratic", 0.032);
+		ObjectProgram.setFloat("pointLights[2].linear", 0.09f);
+		ObjectProgram.setFloat("pointLights[2].quadratic", 0.032f);
 		// point light 4
 		ObjectProgram.setVec3("pointLights[3].position", pointLightPositions[3]);
 		ObjectProgram.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
 		ObjectProgram.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
 		ObjectProgram.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
 		ObjectProgram.setFloat("pointLights[3].constant", 1.0f);
-		ObjectProgram.setFloat("pointLights[3].linear", 0.09);
-		ObjectProgram.setFloat("pointLights[3].quadratic", 0.032);
+		ObjectProgram.setFloat("pointLights[3].linear", 0.09f);
+		ObjectProgram.setFloat("pointLights[3].quadratic", 0.032f);
 #endif // !DISABLE_POINT_LIGHT
 
 #ifndef DISABLE_SPOT_LIGHT
 		//spot light param
-		ObjectProgram.setVec3("spotLight.position", g_Camera.getPos());
-		ObjectProgram.setVec3("spotLight.direction", g_Camera.getFront());
-		ObjectProgram.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-		ObjectProgram.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
-		ObjectProgram.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-		ObjectProgram.setFloat("spotLight.constant", 1.0f);
-		ObjectProgram.setFloat("spotLight.linear", 0.09);
-		ObjectProgram.setFloat("spotLight.quadratic", 0.032);
-		ObjectProgram.setFloat("spotLight.cutOffCos", glm::cos(glm::radians(12.5f)));
-		ObjectProgram.setFloat("spotLight.outerCutOffCos", glm::cos(glm::radians(18.0f)));
+		if (g_EnableFlashLight)
+		{
+			ObjectProgram.setVec3("spotLight.position", g_Camera.getPos());
+			ObjectProgram.setVec3("spotLight.direction", g_Camera.getFront());
+			ObjectProgram.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+			ObjectProgram.setVec3("spotLight.diffuse", 1.0f, 1.0f, 1.0f);
+			ObjectProgram.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+			ObjectProgram.setFloat("spotLight.constant", 1.0f);
+			ObjectProgram.setFloat("spotLight.linear", 0.09);
+			ObjectProgram.setFloat("spotLight.quadratic", 0.032);
+			ObjectProgram.setFloat("spotLight.cutOffCos", glm::cos(glm::radians(12.5f)));
+			ObjectProgram.setFloat("spotLight.outerCutOffCos", glm::cos(glm::radians(18.0f)));
+		}
+		else
+		{
+			ObjectProgram.setVec3("spotLight.position", g_Camera.getPos());
+			ObjectProgram.setVec3("spotLight.direction", g_Camera.getFront());
+			ObjectProgram.setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+			ObjectProgram.setVec3("spotLight.diffuse", 0.0f, 0.0f, 0.0f);
+			ObjectProgram.setVec3("spotLight.specular", 0.0f, 0.0f, 0.0f);
+			ObjectProgram.setFloat("spotLight.constant", 1.0f);
+			ObjectProgram.setFloat("spotLight.linear", 0.09f);
+			ObjectProgram.setFloat("spotLight.quadratic", 0.032f);
+			ObjectProgram.setFloat("spotLight.cutOffCos", glm::cos(glm::radians(12.5f)));
+			ObjectProgram.setFloat("spotLight.outerCutOffCos", glm::cos(glm::radians(18.0f)));
+		}
 #endif // !DISABLE_SPOT_LIGHT
 
 		//material param
-		ObjectProgram.setInt("material.diffuse", 0);
-		ObjectProgram.setInt("material.specular", 1);
+		//ObjectProgram.setInt("material.diffuse", 0);
+		//ObjectProgram.setInt("material.specular", 1);
 		ObjectProgram.setFloat("material.shininess", 32.0f);
 		ObjectProgram.setVec3("worldCameraPos", g_Camera.getPos());
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, ironWoodTexture);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, ironWoodSpecualrTexture);
+		//draw cubes
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, ironWoodTexture);
+		//glActiveTexture(GL_TEXTURE1);
+		//glBindTexture(GL_TEXTURE_2D, ironWoodSpecualrTexture);
+		//draw cubes
+		//glBindVertexArray(VAO[2]);
+		//for (int i = 0; i < (sizeof(cubePositions) / sizeof(vec3)); ++i)
+		//{
 
+		//	model = glm::translate(mat4(1), cubePositions[i]);
 
-		glBindVertexArray(VAO[2]);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
+		//	model = glm::rotate(model, radians(float(20 * i)), glm::vec3(1.0f, 0.3f, 0.5f));
 
-		for (int i = 0; i < (sizeof(cubePositions) / sizeof(vec3)); ++i)
-		{
+		//	ObjectProgram.setMat4("model", model);
 
-			model = glm::translate(mat4(1), cubePositions[i]);
+		//	glDrawArrays(GL_TRIANGLES, 0, 36);
+		//}
 
-			model = glm::rotate(model, radians(float(20 * i)), glm::vec3(1.0f, 0.3f, 0.5f));
-
-			ObjectProgram.setMat4("model", model);
-
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
+		ObjectProgram.use();
+		model = glm::mat4(1);
+		ourModel.Draw(ObjectProgram);
 #endif
 
 		//swap back buffer
