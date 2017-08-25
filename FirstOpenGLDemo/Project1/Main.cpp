@@ -35,6 +35,19 @@ bool g_IsHoldFlashLightKey = 0;
 #define VAO_NUMBER 3
 #define NR_POINT_LIGHT 4
 
+// transparent window locations
+// --------------------------------
+vector<glm::vec3> g_windows_pos
+{
+	glm::vec3(-1.5f, 0.0f, -0.48f),
+	glm::vec3(1.5f, 0.0f, 0.51f),
+	glm::vec3(0.0f, 0.0f, 0.7f),
+	glm::vec3(-0.3f, 0.0f, -2.3f),
+	glm::vec3(0.5f, 0.0f, -0.6f)
+};
+
+std::map<float,glm::vec3> g_SortedWindowsPos;
+
 float g_vertices[36 * 5] =
 {
 	//position			//texCoord
@@ -127,7 +140,15 @@ float g_verticesPosAndNormal[] = {
 	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
 };
 
-unsigned int g_indices[6] =
+float g_QuadVerticesPosAndNormal[] =
+{
+	-0.5f, -0.5f, 0.0f,  0,0,
+	0.5f,-0.5f,0.0f,  1,0,
+	0.5f,0.5f,0.0f,  1,1,
+	-0.5f,0.5f,0.0f,  0,1
+};
+
+unsigned int g_indices[] =
 {
 	0,1,2, 0,2,3
 };
@@ -233,12 +254,11 @@ void prepareVAOs(unsigned int *out_VAO)
 	glEnableVertexAttribArray(2);
 }
 
-unsigned int loadTextureFromFile(const char* filePath, unsigned int textureUnit)
+unsigned int loadTextureFromFile(const char* filePath)
 {
 	unsigned int texture;
 
 	int width, height, nrChannels;
-	//unsigned char* data = stbi_load("../../Resources/Textures/woodContainer.jpg", &width, &height, &nrChannels, 0);
 	unsigned char* data = stbi_load(filePath, &width, &height, &nrChannels, 0);
 	assert(data);
 	if (data)
@@ -252,7 +272,7 @@ unsigned int loadTextureFromFile(const char* filePath, unsigned int textureUnit)
 			format = GL_RGBA;
 
 		glGenTextures(1, &texture);
-		glActiveTexture(GL_TEXTURE0+textureUnit);
+		//glActiveTexture(GL_TEXTURE0+textureUnit);
 		glBindTexture(GL_TEXTURE_2D, texture);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -274,8 +294,49 @@ void scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
 void mouse_callback(GLFWwindow* window, double xPos, double yPos)
 {
 	g_Camera.mouse_callback(window, xPos, yPos);
+
+	g_SortedWindowsPos.clear();
+	for (int i = 0; i< g_windows_pos.size(); ++i)
+	{
+		float distance = glm::length(g_Camera.getPos() - g_windows_pos[i]);
+		g_SortedWindowsPos[distance] = g_windows_pos[i];
+	}
 }
 
+unsigned int prerareSingleTextureVAO()
+{
+	unsigned int GrassVAO;
+	glGenVertexArrays(1, &GrassVAO);
+	unsigned int GrassVBO;
+	glGenBuffers(1, &GrassVBO);
+	unsigned int GrassEBO;
+	glGenBuffers(1, &GrassEBO);
+
+	glBindVertexArray(GrassVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, GrassVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GrassEBO);
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(g_QuadVerticesPosAndNormal), g_QuadVerticesPosAndNormal, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(g_indices), g_indices, GL_STATIC_DRAW);
+
+	//pos 
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
+	//normal
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	return GrassVAO;
+}
+
+void resetRenderState()
+{
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+
+	glDisable(GL_STENCIL_TEST);
+	glStencilMask(0xff);
+	glDisable(GL_BLEND);
+}
 int main()
 {
 	test();
@@ -310,6 +371,8 @@ int main()
 
 	//prepare render-----------------------------------------------------------------------------------------------------------------------
 	Shader shaderProgram("ShaderCode/FirstDemoVS.glsl", "ShaderCode/FirstDemoPS.glsl");
+	Shader SingleColorProgram("ShaderCode/SingleColorVS.glsl", "ShaderCode/SingleColorPS.glsl");
+	Shader SingleTextureProgram("ShaderCode/SingleTextureVS.glsl", "ShaderCode/SingleTexturePS.glsl");
 	Shader LampProgram("ShaderCode/LocalToClipVS.glsl", "ShaderCode/LampPS.glsl");
 	Shader ObjectProgram("ShaderCode/MultiLightingVS.glsl", "ShaderCode/MultiLightingPS.glsl");
 	glm::vec3 cubePositions[] = 
@@ -336,7 +399,7 @@ int main()
 
 	unsigned int VAO[VAO_NUMBER];
 	prepareVAOs(VAO);
-
+	unsigned int singleTextureVAO = prerareSingleTextureVAO();
 
 	mat4 model, view, projection;
 	model = mat4(1);
@@ -348,14 +411,16 @@ int main()
 	vec3 cameraDirection;
 
 	float radius = 10;
-	glEnable(GL_DEPTH_TEST);
 
-	unsigned int ironWoodTexture = loadTextureFromFile("../../Resources/Textures/container2.png", 0);
-	unsigned int ironWoodSpecualrTexture = loadTextureFromFile("../../Resources/Textures/container2_specular.png", 0);
+	unsigned int ironWoodTexture = loadTextureFromFile("../../Resources/Textures/container2.png");
+	unsigned int ironWoodSpecualrTexture = loadTextureFromFile("../../Resources/Textures/container2_specular.png");
+	unsigned int windowTexture = loadTextureFromFile("../../Resources/Textures/blending_transparent_window.png");
+
 	Model ourModel("../../Resources/objects/nanosuit/nanosuit.obj");
 	//renderLoop
 	while (!glfwWindowShouldClose(window))
 	{
+
 		float curTime = glfwGetTime();
 		deltaTime = curTime - lastFrameTime;
 		lastFrameTime = curTime;
@@ -365,7 +430,7 @@ int main()
 
 		//clearcolor buffer
 		glClearColor(0.2f, 0.3f, .3f, 1.f);
-		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT| GL_STENCIL_BUFFER_BIT);
 
 		model = glm::mat4(1);
 		view = g_Camera.GetWorldToViewMatrix();
@@ -475,30 +540,84 @@ int main()
 		ObjectProgram.setFloat("material.shininess", 32.0f);
 		ObjectProgram.setVec3("worldCameraPos", g_Camera.getPos());
 
-		//draw cubes
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, ironWoodTexture);
-		//glActiveTexture(GL_TEXTURE1);
-		//glBindTexture(GL_TEXTURE_2D, ironWoodSpecualrTexture);
-		//draw cubes
-		//glBindVertexArray(VAO[2]);
-		//for (int i = 0; i < (sizeof(cubePositions) / sizeof(vec3)); ++i)
-		//{
-
-		//	model = glm::translate(mat4(1), cubePositions[i]);
-
-		//	model = glm::rotate(model, radians(float(20 * i)), glm::vec3(1.0f, 0.3f, 0.5f));
-
-		//	ObjectProgram.setMat4("model", model);
-
-		//	glDrawArrays(GL_TRIANGLES, 0, 36);
-		//}
-
 		ObjectProgram.use();
 		model = glm::mat4(1);
 		ourModel.Draw(ObjectProgram);
+
+
+
+		//draw cubes
+		shaderProgram.use();
+		model = glm::mat4(1);
+		shaderProgram.setMat4("model", model);
+		shaderProgram.setMat4("view", view);
+		shaderProgram.setMat4("projection", projection);
+		shaderProgram.setFloat("outTexture", 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, ironWoodTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, ironWoodSpecualrTexture);
+
+		//draw cubes
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_ALWAYS, 0x1, 0xff);
+		glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+		glStencilMask(0xff);
+		glBindVertexArray(VAO[2]);
+		for (int i = 0; i < (sizeof(cubePositions) / sizeof(vec3)); ++i)
+		{
+			model = mat4(1);
+			model = glm::rotate(model, radians(float(20 * i)), glm::vec3(1.0f, 0.3f, 0.5f));
+			model = glm::translate(model, cubePositions[i]);
+			shaderProgram.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+
+		//draw cubes outline
+		glStencilFunc(GL_NOTEQUAL, 0x1, 0xff);
+		glDisable(GL_DEPTH_TEST);
+		SingleColorProgram.use();
+		SingleColorProgram.setMat4("projection", projection);
+		SingleColorProgram.setMat4("view", view);
+		for (int i = 0; i < (sizeof(cubePositions) / sizeof(vec3)); ++i)
+		{
+			model = mat4(1);
+			model = glm::rotate(model, radians(float(20 * i)), glm::vec3(1.0f, 0.3f, 0.5f));
+			model = glm::translate(model, cubePositions[i]);
+			model = glm::scale(model, glm::vec3(1.1, 1.1, 1.1));
+			SingleColorProgram.setMat4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 #endif
 
+		//draw windows
+		glDepthMask(GL_FALSE);
+		glEnable(GL_DEPTH_TEST);
+		glDisable(GL_STENCIL_TEST);
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		SingleTextureProgram.use();
+		SingleTextureProgram.setMat4("projection", projection);
+		SingleTextureProgram.setMat4("view", view);
+		SingleTextureProgram.setFloat("texture1", 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, windowTexture);
+
+		glBindVertexArray(singleTextureVAO);
+
+		for (auto i = g_SortedWindowsPos.rbegin();i!= g_SortedWindowsPos.rend();++i)
+		{
+			model = glm::translate(glm::mat4(1), i->second);
+			model = glm::scale(model, glm::vec3(3, 3, 3));
+			SingleTextureProgram.setMat4("model", model);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		}
+		
+
+
+		resetRenderState();
 		//swap back buffer
 		glfwSwapBuffers(window);
 		glfwPollEvents();
