@@ -1,11 +1,12 @@
 ﻿  Main.cpp
-f:\learnopengl\firstopengldemo\project1\main.cpp(23): warning C4305: 'initializing': truncation from 'double' to 'float'
-f:\learnopengl\firstopengldemo\project1\main.cpp(235): warning C4305: '+=': truncation from 'double' to 'float'
-f:\learnopengl\firstopengldemo\project1\main.cpp(241): warning C4305: '-=': truncation from 'double' to 'float'
-f:\learnopengl\firstopengldemo\project1\main.cpp(352): warning C4018: '<': signed/unsigned mismatch
-f:\learnopengl\firstopengldemo\project1\main.cpp(437): warning C4305: 'argument': truncation from 'double' to 'float'
-f:\learnopengl\firstopengldemo\project1\main.cpp(438): warning C4305: 'argument': truncation from 'double' to 'float'
-f:\learnopengl\firstopengldemo\project1\main.cpp(693): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-f:\learnopengl\firstopengldemo\project1\main.cpp(677): warning C4101: 'cameraDirection': unreferenced local variable
+f:\learnopengl\firstopengldemo\project1\main.cpp(26): warning C4305: 'initializing': truncation from 'double' to 'float'
+f:\learnopengl\firstopengldemo\project1\main.cpp(255): warning C4305: '+=': truncation from 'double' to 'float'
+f:\learnopengl\firstopengldemo\project1\main.cpp(261): warning C4305: '-=': truncation from 'double' to 'float'
+f:\learnopengl\firstopengldemo\project1\main.cpp(373): warning C4018: '<': signed/unsigned mismatch
+f:\learnopengl\firstopengldemo\project1\main.cpp(469): warning C4305: 'argument': truncation from 'double' to 'float'
+f:\learnopengl\firstopengldemo\project1\main.cpp(470): warning C4305: 'argument': truncation from 'double' to 'float'
+f:\learnopengl\firstopengldemo\project1\main.cpp(493): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+f:\learnopengl\firstopengldemo\project1\main.cpp(765): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+f:\learnopengl\firstopengldemo\project1\main.cpp(740): warning C4101: 'cameraDirection': unreferenced local variable
   Project1.vcxproj -> F:\LearnOpenGL\FirstOpenGLDemo\Debug\Project1.exe
   Project1.vcxproj -> F:\LearnOpenGL\FirstOpenGLDemo\Debug\Project1.pdb (Partial PDB)

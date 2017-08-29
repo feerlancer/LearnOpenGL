@@ -2,19 +2,20 @@
 #include "Shader.h"
 using namespace std;
 using namespace glm;
-Shader::Shader(const char* vertexPath, const char* fragmentPath)
+Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath)
 {
 	//read shader code from file
-	string vertexCode,fragmentCode;
-	ifstream vShaderFile,fShaderFile;
+	string vertexCode,fragmentCode, geometryCode;
+	ifstream vShaderFile,fShaderFile,gShaderFile;
 	vShaderFile.exceptions(ifstream::failbit | ifstream::badbit);
 	fShaderFile.exceptions(ifstream::failbit | ifstream::badbit);
+	gShaderFile.exceptions(ifstream::failbit | ifstream::badbit);
 	try
 	{
+		stringstream vShaderStream, fShaderStream, gShaderStream;
 		vShaderFile.open(vertexPath);
 		fShaderFile.open(fragmentPath);
 
-		stringstream vShaderStream, fShaderStream;
 		vShaderStream << vShaderFile.rdbuf();
 		fShaderStream << fShaderFile.rdbuf();
 
@@ -23,6 +24,13 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 
 		vertexCode = vShaderStream.str();
 		fragmentCode = fShaderStream.str();
+
+		if (nullptr != geometryPath) {
+			gShaderFile.open(geometryPath);
+			gShaderStream << gShaderFile.rdbuf();
+			gShaderFile.close();
+			geometryCode = gShaderStream.str();
+		}
 	}
 	catch (ifstream::failure e)
 	{
@@ -32,7 +40,6 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 
 	const char* vShaderCode = vertexCode.c_str();
 	const char* fShaderCode = fragmentCode.c_str();
-
 	//compilation
 
 	int success;
@@ -48,16 +55,31 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 	glCompileShader(fragmentShader);
 	checkCompilationError(fragmentShader, fragmentPath);
 
+
 	//Shader program
 	ID = glCreateProgram();
 	glAttachShader(ID, vertexShader);
 	glAttachShader(ID, fragmentShader);
+
+	unsigned int geometryShader;
+	if (nullptr != geometryPath) {
+		const char* gShaderCode = geometryCode.c_str();
+		geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
+		glShaderSource(geometryShader, 1, &gShaderCode, NULL);
+		glCompileShader(geometryShader);
+		checkCompilationError(geometryShader, geometryPath);
+		glAttachShader(ID, geometryShader);
+	}
+
 	glLinkProgram(ID);
 	checkLinkError();
 
 	//delete shaders
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
+	if (nullptr != geometryPath) {
+		glDeleteShader(geometryShader);
+	}
 
 }
 
@@ -145,6 +167,10 @@ void Shader::checkIsProgramBound()
 int Shader::getUniformLocation(const char * name)
 {
 	int location = glGetUniformLocation(ID,name);
+	if (location == -1)
+	{
+		cout <<"cannot find param: "<< name << endl;
+	}
 	assert(location != -1);
 	return location;
 }

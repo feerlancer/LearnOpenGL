@@ -1,4 +1,6 @@
 #version 430 core
+
+//#define USE_GS
 struct Material
 {
 	sampler2D texture_diffuse0;
@@ -45,9 +47,17 @@ struct SpotLight
 	float quadratic;
 };
 
-in vec3 worldFragPos;
-in vec3 worldNormal;
-in vec2 texCoords;
+// in vec3 worldFragPos;
+// in vec3 worldNormal;
+// in vec2 texCoords;
+
+
+in VS_OUT
+{
+	vec3 worldFragPos;
+	vec3 worldNormal;
+	vec2 texCoords;
+}ps_in;
 
 out vec4 FragColor;
 
@@ -68,21 +78,21 @@ vec3 caculateSpotLight(SpotLight a_SpotLight,vec3 a_Normal,vec3 a_FragPos,vec3 a
 void main()
 {
 	vec3 FragColorV3 = vec3(0);
-	vec3 fragToCameraDir = worldCameraPos - worldFragPos;
-	FragColorV3 = caculateDirectionalLight(directionalLight,worldNormal,fragToCameraDir);
+	vec3 fragToCameraDir = worldCameraPos - ps_in.worldFragPos;
+	FragColorV3 = caculateDirectionalLight(directionalLight,ps_in.worldNormal,fragToCameraDir);
 	for(int i=0;i<NR_POINT_LIGHTS;++i)
 	{
-		FragColorV3+=caculatePointLight(pointLights[i],worldNormal,worldFragPos,fragToCameraDir);
+		FragColorV3+=caculatePointLight(pointLights[i],ps_in.worldNormal,ps_in.worldFragPos,fragToCameraDir);
 	}
-	FragColorV3+=caculateSpotLight(spotLight,worldNormal,worldFragPos,fragToCameraDir);
+	FragColorV3+=caculateSpotLight(spotLight,ps_in.worldNormal,ps_in.worldFragPos,fragToCameraDir);
 
 	FragColor = vec4(FragColorV3,1);
 }
 
 vec3 caculateDirectionalLight(DirectionalLight a_DirLight, vec3 a_Normal,vec3 a_FragToCameraDir)
 {
-	vec3 diffuseTextureColor = vec3(texture(material.texture_diffuse0, texCoords));
-	vec3 specularTextureColor = vec3(texture(material.texture_specular0, texCoords));
+	vec3 diffuseTextureColor = vec3(texture(material.texture_diffuse0, ps_in.texCoords));
+	vec3 specularTextureColor = vec3(texture(material.texture_specular0, ps_in.texCoords));
 	vec3 norm = normalize(a_Normal);
 	//ambient
 	vec3 ambient = a_DirLight.ambient* diffuseTextureColor;
@@ -100,8 +110,8 @@ vec3 caculateDirectionalLight(DirectionalLight a_DirLight, vec3 a_Normal,vec3 a_
 
 vec3 caculatePointLight(PointLight a_PointLight, vec3 a_Normal, vec3 a_FragPos,vec3 a_FragToCameraDir)
 {
-	vec3 diffuseTextureColor = vec3(texture(material.texture_diffuse0, texCoords));
-	vec3 specularTextureColor = vec3(texture(material.texture_specular0, texCoords));
+	vec3 diffuseTextureColor = vec3(texture(material.texture_diffuse0, ps_in.texCoords));
+	vec3 specularTextureColor = vec3(texture(material.texture_specular0, ps_in.texCoords));
 	vec3 norm = normalize(a_Normal);
 	vec3 fragToLightDir = normalize(a_PointLight.position - a_FragPos);
 	//ambient
@@ -123,8 +133,8 @@ vec3 caculatePointLight(PointLight a_PointLight, vec3 a_Normal, vec3 a_FragPos,v
 
 vec3 caculateSpotLight(SpotLight a_SpotLight,vec3 a_Normal,vec3 a_FragPos,vec3 a_FragToCameraDir) 
 {
-	vec3 textureDiffse = vec3(texture(material.texture_diffuse0,texCoords));
-	vec3 textureSpecular = vec3(texture(material.texture_specular0,texCoords));
+	vec3 textureDiffse = vec3(texture(material.texture_diffuse0,ps_in.texCoords));
+	vec3 textureSpecular = vec3(texture(material.texture_specular0,ps_in.texCoords));
 	vec3 fragToLightDir = normalize(a_SpotLight.position-a_FragPos);
 	vec3 norm = normalize(a_Normal);
 

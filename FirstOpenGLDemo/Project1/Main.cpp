@@ -6,6 +6,9 @@
 #include <vector>
 #include<map>
 #include"Model.h"
+#include"SkyBox.h"
+
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -16,7 +19,7 @@ using namespace std;
 //#define DISABLE_DIRECTIONAL_LIGHT
 //#define DISABLE_POINT_LIGHT
 //#define DISABLE_SPOT_LIGHT
-
+//#define RENDER_TO_TEXTURE
 
 
 
@@ -36,8 +39,7 @@ bool g_IsHoldFlashLightKey = 0;
 #define NR_POINT_LIGHT 4
 
 //VAOS
-unsigned int g_VAO[VAO_NUMBER];
-unsigned int g_SingleTextureVAO, g_ScreenVAO;
+unsigned int g_LampVAO,g_CubeVAO,g_SingleTextureVAO, g_ScreenVAO;
 
 //shaders
 Shader 
@@ -46,7 +48,11 @@ g_SingleColorProgram,
 g_SingleTextureProgram,
 g_LampProgram,
 g_ObjectProgram,
-g_ScreenProgram;
+g_ScreenProgram,
+g_SkyboxProgram,
+g_EnvironmentMappingProgram;
+
+
 mat4 g_Model, g_View, g_Projection;
 
 //textures
@@ -59,7 +65,16 @@ g_IronWoodTexture
 //Model
 Model g_OurModel;
 
+//SkyBox
+Skybox g_SkyBox;
 
+struct UniformBlockData_MVPMatries
+{
+	glm::mat4 projection;
+	glm::mat4 view;
+};
+
+UniformBlockData_MVPMatries g_ubo_Matirx_data;
 // transparent window locations
 // --------------------------------
 vector<glm::vec3> g_windows_pos
@@ -207,6 +222,11 @@ glm::vec3 g_pointLightPositions[] = {
 	glm::vec3(-4.0f,  2.0f, -12.0f),
 	glm::vec3(0.0f,  0.0f, -3.0f)
 };
+
+void resetRenderState();
+
+
+
 void test()
 {
 
@@ -261,44 +281,45 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
-void prepareVAOs(unsigned int *out_VAO)
+void prepareVAOs()
 {
-	glGenVertexArrays(VAO_NUMBER, out_VAO);
+	glGenVertexArrays(1, &g_LampVAO);
+	glGenVertexArrays(1, &g_CubeVAO);
 
 	//multi cubes VAO
-	glBindVertexArray(out_VAO[0]);
+	//glBindVertexArray(out_VAO[0]);
 
 	unsigned int VBO;
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-	unsigned int EBO;
-	glGenBuffers(1, &EBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	//unsigned int EBO;
+	//glGenBuffers(1, &EBO);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertices), g_vertices, GL_STATIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(g_indices), g_indices, GL_STATIC_DRAW);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(g_indices), g_indices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), NULL);
-	glEnableVertexAttribArray(0);
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), NULL);
+	//glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+	//glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	//glEnableVertexAttribArray(1);
 
-	glBindVertexArray(0);
+	//glBindVertexArray(0);
 	unsigned int PosAndNormalVBO;
 	glGenBuffers(1, &PosAndNormalVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, PosAndNormalVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(g_verticesPosAndNormal), g_verticesPosAndNormal, GL_STATIC_DRAW);
 
 	//Light VAO
-	glBindVertexArray(out_VAO[1]);
+	glBindVertexArray(g_LampVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, PosAndNormalVBO);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*) 0);
 	glEnableVertexAttribArray(0);
 
 	//Cube VAO
-	glBindVertexArray(out_VAO[2]);
+	glBindVertexArray(g_CubeVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, PosAndNormalVBO);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -355,30 +376,41 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos)
 		g_SortedWindowsPos[distance] = g_windows_pos[i];
 	}
 }
-void drawScene()
+
+void drawLamps()
 {
-#if 1
-	//light scene
-	glEnable(GL_DEPTH_TEST);
+	resetRenderState();
 	//Lamps_____________________________________________________________________________
 	g_LampProgram.use();
-	g_LampProgram.setMat4("projection", g_Projection);
-	glBindVertexArray(g_VAO[1]);
+	glBindVertexArray(g_LampVAO);
 	for (int i = 0; i < NR_POINT_LIGHT; ++i)
 	{
-		g_LampProgram.setMat4("view", g_View);
 		glm::mat4 model(1);
 		model = glm::translate(model, g_pointLightPositions[i]);
 		model = glm::scale(model, glm::vec3(0.2f));
 		g_LampProgram.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
+}
+
+void drawSkyBox()
+{
+	resetRenderState();
+	//skybox
+	glDepthFunc(GL_LEQUAL);
+	g_SkyboxProgram.use();
+	g_SkyboxProgram.setMat4("projection", g_Projection);
+	g_SkyboxProgram.setMat4("view", glm::mat4(glm::mat3(g_View)));
+
+	g_SkyBox.Draw(g_SkyboxProgram);
+}
+
+void drawCubes()
+{
 
 	//cube_____________________________________________________________________________
 	g_ObjectProgram.use();
 	g_ObjectProgram.setMat4("model", g_Model);
-	g_ObjectProgram.setMat4("projection", g_Projection);
-	g_ObjectProgram.setMat4("view", g_View);
 
 #ifndef DISABLE_DIRECTIONAL_LIGHT
 	//directional light param
@@ -455,72 +487,68 @@ void drawScene()
 #endif // !DISABLE_SPOT_LIGHT
 
 	//material param
-	//g_ObjectProgram.setInt("material.diffuse", 0);
-	//g_ObjectProgram.setInt("material.specular", 1);
+	g_ObjectProgram.use();
 	g_ObjectProgram.setFloat("material.shininess", 32.0f);
 	g_ObjectProgram.setVec3("worldCameraPos", g_Camera.getPos());
-
-	g_ObjectProgram.use();
+	g_ObjectProgram.setFloat("deltaTime", glfwGetTime());
 	g_OurModel.Draw(g_ObjectProgram);
 
 
 	//draw cubes
-	g_ShaderProgram.use();
-	g_ShaderProgram.setMat4("model", g_Model);
-	g_ShaderProgram.setMat4("view", g_View);
-	g_ShaderProgram.setMat4("projection", g_Projection);
-	g_ShaderProgram.setFloat("outTexture", 0);
+	g_EnvironmentMappingProgram.use();
+	g_EnvironmentMappingProgram.setVec3("worldCameraPos", g_Camera.getPos());
+	g_EnvironmentMappingProgram.setInt("cubeTexture", 0);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, g_IronWoodTexture);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, g_IronWoodSpecualrTexture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, g_SkyBox.GetCubeTextureID());
 
-	//draw cubes
+	//g_ShaderProgram.use();
+	//g_ShaderProgram.setFloat("outTexture", 0);
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, g_IronWoodTexture);
+	//glActiveTexture(GL_TEXTURE1);
+	//glBindTexture(GL_TEXTURE_2D, g_IronWoodSpecualrTexture);
 	glEnable(GL_STENCIL_TEST);
 	glStencilFunc(GL_ALWAYS, 0x1, 0xff);
 	glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
 	glStencilMask(0xff);
-	glBindVertexArray(g_VAO[2]);
+	glBindVertexArray(g_CubeVAO);
 	for (int i = 0; i < (sizeof(g_cubePositions) / sizeof(vec3)); ++i)
 	{
 		glm::mat4 model(1);
 		model = glm::rotate(model, radians(float(20 * i)), glm::vec3(1.0f, 0.3f, 0.5f));
 		model = glm::translate(model, g_cubePositions[i]);
-		g_ShaderProgram.setMat4("model", model);
+		//g_ShaderProgram.setMat4("model", model);
+		g_EnvironmentMappingProgram.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
 
 	//draw cubes outline
-	glStencilFunc(GL_NOTEQUAL, 0x1, 0xff);
-	glDisable(GL_DEPTH_TEST);
-	g_SingleColorProgram.use();
-	g_SingleColorProgram.setMat4("projection", g_Projection);
-	g_SingleColorProgram.setMat4("view", g_View);
-	for (int i = 0; i < (sizeof(g_cubePositions) / sizeof(vec3)); ++i)
-	{
-		glm::mat4 model(1);
-		model = glm::rotate(model, radians(float(20 * i)), glm::vec3(1.0f, 0.3f, 0.5f));
-		model = glm::translate(model, g_cubePositions[i]);
-		model = glm::scale(model, glm::vec3(1.1, 1.1, 1.1));
-		g_SingleColorProgram.setMat4("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
-#endif
+	//glStencilFunc(GL_NOTEQUAL, 0x1, 0xff);
+	//glDisable(GL_DEPTH_TEST);
+	//g_SingleColorProgram.use();
+	//for (int i = 0; i < (sizeof(g_cubePositions) / sizeof(vec3)); ++i)
+	//{
+	//	glm::mat4 model(1);
+	//	model = glm::rotate(model, radians(float(20 * i)), glm::vec3(1.0f, 0.3f, 0.5f));
+	//	model = glm::translate(model, g_cubePositions[i]);
+	//	model = glm::scale(model, glm::vec3(1.1, 1.1, 1.1));
+	//	g_SingleColorProgram.setMat4("model", model);
+	//	glDrawArrays(GL_TRIANGLES, 0, 36);
+	//}
 }
 
 void drawWindows()
 {
 	//draw windows
-	glDepthMask(GL_FALSE);
 	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+
 	glDisable(GL_STENCIL_TEST);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	g_SingleTextureProgram.use();
-	g_SingleTextureProgram.setMat4("projection", g_Projection);
-	g_SingleTextureProgram.setMat4("view", g_View);
 	g_SingleTextureProgram.setFloat("texture1", 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, g_WindowTexture);
@@ -535,6 +563,17 @@ void drawWindows()
 		g_SingleTextureProgram.setMat4("model", model);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
+}
+void drawScene()
+{
+	//draw opacity
+	drawLamps();
+	drawCubes();
+	drawSkyBox();
+
+	//draw semi-transparent
+	//semi-transparent object must be render at last, as it enable z-test, but disable written z-buffer, 
+	drawWindows();
 }
 
 unsigned int createSingleTextureVAO()
@@ -614,10 +653,29 @@ void createFBO(unsigned int &out_FBO, unsigned int &out_ColorTexture)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+unsigned int createAndBindUBO(unsigned int bingdingPoint)
+{
+	unsigned int UBO;
+	glGenBuffers(1, &UBO);
+	glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+	glBufferData(GL_UNIFORM_BUFFER, 256, nullptr, GL_STATIC_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, bingdingPoint, UBO);
+	return UBO;
+}
+
+unsigned int updateUBO(unsigned int UBO, void * data, unsigned int sizeInByte, int offsetInByte=0)
+{
+	glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+	glBufferSubData(GL_UNIFORM_BUFFER, offsetInByte, sizeInByte, data);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	return UBO;
+}
+
 void resetRenderState()
 {
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS);
 
 	glDisable(GL_STENCIL_TEST);
 	glStencilMask(0xff);
@@ -663,13 +721,18 @@ int main()
 	g_SingleColorProgram = Shader("ShaderCode/SingleColorVS.glsl", "ShaderCode/SingleColorPS.glsl");
 	g_SingleTextureProgram = Shader("ShaderCode/SingleTextureVS.glsl", "ShaderCode/SingleTexturePS.glsl");
 	g_LampProgram = Shader("ShaderCode/LocalToClipVS.glsl", "ShaderCode/LampPS.glsl");
-	g_ObjectProgram = Shader("ShaderCode/MultiLightingVS.glsl", "ShaderCode/MultiLightingPS.glsl");
-	//g_ScreenProgram = Shader("ShaderCode/PassThroughVS.glsl", "ShaderCode/SingleTexturePS.glsl");
-	g_ScreenProgram = Shader("ShaderCode/PassThroughVS.glsl", "ShaderCode/BlurPS.glsl");
+	g_ObjectProgram = Shader("ShaderCode/MultiLightingVS.glsl", "ShaderCode/MultiLightingPS.glsl","ShaderCode/ExplodeGS.glsl");
+	//g_ObjectProgram = Shader("ShaderCode/MultiLightingVS.glsl", "ShaderCode/MultiLightingPS.glsl", "ShaderCode/VisiualizeNormalGS.glsl");
+	g_ScreenProgram = Shader("ShaderCode/PassThroughVS.glsl", "ShaderCode/SingleTexturePS.glsl");
+	//g_ScreenProgram = Shader("ShaderCode/PassThroughVS.glsl", "ShaderCode/BlurPS.glsl");
+	g_SkyboxProgram = Shader("ShaderCode/SkyboxVS.glsl", "ShaderCode/SkyboxPS.glsl");
+	g_EnvironmentMappingProgram = Shader("ShaderCode/TransformPosAndNormalVS.glsl", "ShaderCode/EnvieromentMappingPS.glsl");
 
-	prepareVAOs(g_VAO);
+	prepareVAOs();
 	g_SingleTextureVAO = createSingleTextureVAO();
 	g_ScreenVAO = createScreenVAO();
+
+	unsigned int Matrix_UBO = createAndBindUBO(0);
 	//g_Projection = perspective(radians(45.f), (screenWidth) / screenHeight, 0.1f, 100.f);
 
 	vec3 cameraTarget(0.f, 0.f, 0.f);
@@ -682,7 +745,16 @@ int main()
 	g_WindowTexture = loadTextureFromFile("../../Resources/Textures/blending_transparent_window.png");
 
 	g_OurModel = Model("../../Resources/objects/nanosuit/nanosuit.obj");
-
+	const char* cubeMapFaces[] =
+	{
+		"../../Resources/Textures/skybox/right.jpg",
+		"../../Resources/Textures/skybox/left.jpg",
+		"../../Resources/Textures/skybox/top.jpg",
+		"../../Resources/Textures/skybox/bottom.jpg",
+		"../../Resources/Textures/skybox/back.jpg",
+		"../../Resources/Textures/skybox/front.jpg",
+	};
+	g_SkyBox = Skybox(cubeMapFaces);
 	unsigned int FBO, textureColorBuffer;
 	createFBO(FBO, textureColorBuffer);
 
@@ -702,16 +774,20 @@ int main()
 		g_View = g_Camera.GetWorldToViewMatrix();
 		g_Projection = g_Camera.GetProjectionMatrix();
 
-		//clearcolor buffer
-		//glClearColor(0.2f, 0.3f, .3f, 1.f);
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+		g_ubo_Matirx_data.projection = g_Projection;
+		g_ubo_Matirx_data.view = g_View;
+		updateUBO(Matrix_UBO, &g_ubo_Matirx_data, sizeof(g_ubo_Matirx_data));
 
+		//render to texture
+#ifdef RENDER_TO_TEXTURE
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+#endif
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessery actually, since we won't be able to see behind the quad anyways)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		drawScene();
 
+#ifdef RENDER_TO_TEXTURE		//draw the texture
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(0.2f, 0.3f, .3f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -724,7 +800,7 @@ int main()
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textureColorBuffer);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
+#endif
 		//reset
 		resetRenderState();
 

@@ -8,8 +8,11 @@ out vec3 worldNormal;
 out vec2 texCoords;
 
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+layout(binding = 0 ) uniform Matrices
+{
+    mat4 projection;
+    mat4 view;
+};
 
 void main()
 {

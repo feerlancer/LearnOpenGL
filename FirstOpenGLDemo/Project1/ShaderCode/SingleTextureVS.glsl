@@ -3,8 +3,11 @@ layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec2 aTexCoords;
 
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+layout(binding = 0 ) uniform Matrices
+{
+    mat4 projection;
+    mat4 view;
+};
 
 out vec2 texCoords;
 void main()
