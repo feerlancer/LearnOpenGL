@@ -72,6 +72,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geo
 	}
 
 	glLinkProgram(ID);
+	cout << fragmentPath << endl;
 	checkLinkError();
 
 	//delete shaders
@@ -123,6 +124,10 @@ void Shader::setVec3(const char* name, const glm::vec3 value)
 	glUniform3f(location, value.x, value.y, value.z);
 }
 
+void Shader::setMat4(char * name, const glm::mat4& value)
+{
+	setMat4(const_cast<const char *>(name), value);
+}
 
 void Shader::setMat4(const char * name, const glm::mat4& value)
 {

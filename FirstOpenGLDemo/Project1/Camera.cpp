@@ -17,6 +17,7 @@ Camera::Camera():
 	m_LastCursorPosY(0.f),
 	m_Pitch(0.f),
 	m_Yaw(-90.f),
+	//m_Yaw(0.f),
 	m_Fov(45.f),
 	m_FovMax(100.f),
 	m_FovMin(1.f)
@@ -73,7 +74,7 @@ void Camera::move(ENUM_MOVEDIRECTION direction, float deltaTime)
 
 mat4 Camera::GetProjectionMatrix()
 {
-	return perspective(radians(m_Fov), m_ScreenWidth/m_ScreenHeight, 0.1f, 100.f);
+	return perspective(radians(m_Fov), m_ScreenWidth/m_ScreenHeight, 0.1f, 200.f);
 }
 
 void Camera::updateCameraDirections()
@@ -130,7 +131,7 @@ glm::mat4 CaculateLookAtMatrix(glm::vec3 position, glm::vec3 target, glm::vec3 w
 
 mat4 Camera::GetWorldToViewMatrix()
 {
-#if 1
+#if 0
 	return lookAt(m_CameraPos, m_CameraPos + m_CameraTargetReverseDirection, m_WorldUp);
 
 #else
@@ -141,6 +142,7 @@ mat4 Camera::GetWorldToViewMatrix()
 
 void Camera::mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
+
 	if (m_FirstMouse)
 	{
 		m_LastCursorPosX = xpos;
@@ -172,6 +174,27 @@ void Camera::mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	front.y = sin(glm::radians(m_Pitch));
 	front.z = cos(glm::radians(m_Pitch)) * sin(glm::radians(m_Yaw));
 	m_CameraTargetReverseDirection = glm::normalize(front);
+
+
+
+
+
+	//glm::vec3 origionFront(0.f, 0.0f, -4.0f);
+	//glm::vec4 V4_origionFront(origionFront, 0.f);
+	//glm::vec3 origionRight = normalize(cross(origionFront, m_WorldUp));
+	//glm::vec3 V4_origionRight = vec4(origionRight, 0);
+	//glm::vec3 origionUp = normalize(cross(origionRight, origionFront));
+	//glm::vec3 V4_origionUp = vec4(origionUp, 0);
+
+	//float halfPitch = glm::radians(m_Pitch/2);
+	//glm::quat q_Pitch = normalize(quat(vec4(sin(halfPitch) *origionFront, cos(halfPitch))));
+	//float halfYaw = glm::radians(m_Yaw/2);
+	//glm::quat q_Yaw = normalize(quat(vec4(sin(halfYaw) * origionUp, cos(halfYaw))));
+
+	//glm::quat qq = glm::normalize(q_Pitch*q_Yaw);
+	//vec4 V4_newFront = qq * V4_origionFront * glm::quat(-qq.x, -qq.y, -qq.z, qq.w);// *quat(-q_Yaw.x, -q_Yaw.y, -q_Yaw.z, q_Yaw.w);
+	//m_CameraTargetReverseDirection = glm::normalize(vec3(V4_newFront.x, V4_newFront.y, V4_newFront.z));
+
 
 	updateCameraDirections();
 }

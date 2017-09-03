@@ -17,7 +17,7 @@
   <Inject>false</Inject>
   <AutoStart>false</AutoStart>
   <Executable>F:\LearnOpenGL\FirstOpenGLDemo\Debug\Project1.exe</Executable>
-  <WorkingDir />
+  <WorkingDir>F:\LearnOpenGL\FirstOpenGLDemo\Project1</WorkingDir>
   <CmdLine />
   <Environment />
 </CaptureSettings>

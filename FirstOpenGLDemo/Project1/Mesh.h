@@ -30,7 +30,6 @@ class Mesh
 public:
 	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures);
 	void Draw(Shader shader);
-private:
 	vector<Vertex> m_Vertices;
 	vector<unsigned int> m_Indices;
 	vector<Texture> m_Textures;
@@ -38,6 +37,10 @@ private:
 	unsigned int m_VBO; //vertex buffer object
 	unsigned int m_EBO;// element buffer object
 	unsigned int m_VAO;// vertex array object
+
+	unsigned int GetVAO() {	return m_VAO;	}
+	unsigned int GetVBO() {	return m_VBO;	}
+private:
 	void setupMesh();
 };
 
