@@ -71,7 +71,24 @@ struct SpotLight
 	float quadratic;
 	float padding7;
 };
+struct PBR_DirectionalLight
+{
+	vec3 position;
+	float padding0;
+};
+struct PBR_PointLight
+{
+	vec3 position;
+	float padding0;
 
+	vec3 color;
+	float padding1;
+};
+struct PBR_SpotLight
+{
+	vec3 position;
+	float padding0;
+};
 struct UBO_BLOCK_MATRIX //binging = 1, for camera view/ projection
 {
 	glm::vec3 worldCameraPos;
@@ -99,4 +116,11 @@ struct UBO_BLOCK_LIGHT_INFO //binging = 2
 	DirectionalLight dirlight;
 	PointLight pointLights[4];
 	SpotLight spotLight;
+};
+
+struct UBO_BLOCK_PBR_LIGHT_INFO //binging = 3
+{
+	PBR_DirectionalLight pbr_dirlight;
+	PBR_PointLight pbr_pointLights[4];
+	PBR_SpotLight pbr_spotLight;
 };

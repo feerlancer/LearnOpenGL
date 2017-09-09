@@ -149,6 +149,7 @@
     <ClInclude Include="SortAlgorithms.h" />
     <ClInclude Include="UniformBlockDataStruct.h" />
     <ClInclude Include="Utility.h" />
+    <ClInclude Include="VAOCreater.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

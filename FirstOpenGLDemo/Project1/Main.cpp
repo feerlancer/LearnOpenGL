@@ -11,6 +11,7 @@
 #include"Utility.h"
 #include "SimpleModel.h"
 #include"FBOCreater.h"
+#include"VAOCreater.h"
 #include"UniformBlockDataStruct.h"
 //“∆Ñ”ŒÔÛw 1rotate 2 scale 3 translate
 #define STB_IMAGE_IMPLEMENTATION
@@ -66,9 +67,11 @@ glm::mat4 g_AsteroidModel[g_AsteroidNum];
 unsigned int g_LampVAO,g_CubeVAO,g_SingleTextureVAO, g_ScreenVAO;
 
 //UBOS
-unsigned int g_Matrix_UBO;
-unsigned int g_Common_USE_UBO;
-unsigned int g_Light_Info_UBO;
+unsigned int g_Matrix_UBO
+,g_Common_USE_UBO
+,g_Light_Info_UBO
+, g_PBR_Light_Info_UBO
+;
 
 //shaders
 Shader 
@@ -86,7 +89,8 @@ g_EnvironmentMappingProgram,
 g_ModelProgram,
 g_ResloveMSAAProgram,
 g_GenShadowMapProgram,
-g_GenPointShadowMapProgram
+g_GenPointShadowMapProgram,
+g_PBRProgram
 ;
 
 
@@ -115,6 +119,7 @@ struct UniformBlockData_MVPMatries
 UniformBlockData_MVPMatries g_ubo_Matirx_data;
 UBO_BLOCK_1 g_uboBlock1_data;
 UBO_BLOCK_LIGHT_INFO g_ubo_block_light_info_data;
+UBO_BLOCK_PBR_LIGHT_INFO g_ubo_block_PBR_light_info_data;
 // transparent window locations
 // --------------------------------
 
@@ -144,6 +149,7 @@ void test()
 	//{
 	//	cout << i << " ";
 	//}
+
 }
 
 void processInput(GLFWwindow* window)
@@ -243,6 +249,7 @@ void loadShaders()
 	g_ModelProgram = Shader("ShaderCode/ModelVS.glsl", "ShaderCode/ModelPS.glsl");
 	g_GenShadowMapProgram = Shader("ShaderCode/GenShadowMapVS.glsl", "ShaderCode/GenShadowMapPS.glsl");
 	g_GenPointShadowMapProgram = Shader("ShaderCode/GenPointShadowMapVS.glsl", "ShaderCode/GenPointShadowMapPS.glsl", "ShaderCode/GenPointShadowMapGS.glsl");
+	g_PBRProgram = Shader("ShaderCode/PBRVS.glsl", "ShaderCode/PBRPS.glsl");
 }
 
 void updateShaderUniforms()
@@ -557,55 +564,6 @@ void drawScene()
 	//drawWindows();
 }
 
-unsigned int createSingleTextureVAO()
-{
-	unsigned int GrassVAO;
-	glGenVertexArrays(1, &GrassVAO);
-	unsigned int GrassVBO;
-	glGenBuffers(1, &GrassVBO);
-	unsigned int GrassEBO;
-	glGenBuffers(1, &GrassEBO);
-
-	glBindVertexArray(GrassVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, GrassVBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GrassEBO);
-
-	glBufferData(GL_ARRAY_BUFFER, sizeof(g_QuadVerticesPosAndNormal), g_QuadVerticesPosAndNormal, GL_STATIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(g_indices), g_indices, GL_STATIC_DRAW);
-
-	//pos 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
-	//normal
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	return GrassVAO;
-}
-unsigned int createScreenVAO()
-{
-	unsigned int GrassVAO;
-	glGenVertexArrays(1, &GrassVAO);
-	unsigned int GrassVBO;
-	glGenBuffers(1, &GrassVBO);
-	unsigned int GrassEBO;
-	glGenBuffers(1, &GrassEBO);
-
-	glBindVertexArray(GrassVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, GrassVBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GrassEBO);
-
-	glBufferData(GL_ARRAY_BUFFER, sizeof(g_QuadVerticesPosAndTexCoords), g_QuadVerticesPosAndTexCoords, GL_STATIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(g_indices), g_indices, GL_STATIC_DRAW);
-
-	//pos 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
-	//texCoords
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	return GrassVAO;
-}
-
 unsigned int createAndBindUBO(unsigned int bingdingPoint, unsigned int sizeInByte = 256)
 {
 	unsigned int UBO;
@@ -759,8 +717,141 @@ void updateAllUBOs()
 	g_ubo_block_light_info_data.dirlight.view = glm::lookAt(-g_directionLightDir, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 
 	updateUBO(g_Light_Info_UBO, &g_ubo_block_light_info_data, sizeof(g_ubo_block_light_info_data));
+
+	//PBR light info
+	for (int i = 0; i < 4; ++i)
+	{
+		g_ubo_block_PBR_light_info_data.pbr_pointLights[i].color = g_PBR_light_colors[i];
+		g_ubo_block_PBR_light_info_data.pbr_pointLights[i].position = g_PBR_light_positions[i];
+	}
+	updateUBO(g_PBR_Light_Info_UBO, &g_ubo_block_PBR_light_info_data, sizeof(g_ubo_block_PBR_light_info_data));
+
 }
 
+unsigned int sphereVAO = 0;
+unsigned int indexCount;
+void renderSphere()
+{
+	if (sphereVAO == 0)
+	{
+		glGenVertexArrays(1, &sphereVAO);
+
+		unsigned int vbo, ebo;
+		glGenBuffers(1, &vbo);
+		glGenBuffers(1, &ebo);
+
+		std::vector<glm::vec3> positions;
+		std::vector<glm::vec2> uv;
+		std::vector<glm::vec3> normals;
+		std::vector<unsigned int> indices;
+
+		const unsigned int X_SEGMENTS = 64;
+		const unsigned int Y_SEGMENTS = 64;
+		const float PI = 3.14159265359;
+		for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+		{
+			for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+			{
+				float xSegment = (float)x / (float)X_SEGMENTS;
+				float ySegment = (float)y / (float)Y_SEGMENTS;
+				float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+				float yPos = std::cos(ySegment * PI);
+				float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+
+				positions.push_back(glm::vec3(xPos, yPos, zPos));
+				uv.push_back(glm::vec2(xSegment, ySegment));
+				normals.push_back(glm::vec3(xPos, yPos, zPos));
+			}
+		}
+
+		bool oddRow = false;
+		for (int y = 0; y < Y_SEGMENTS; ++y)
+		{
+			if (!oddRow) // even rows: y == 0, y == 2; and so on
+			{
+				for (int x = 0; x <= X_SEGMENTS; ++x)
+				{
+					indices.push_back(y       * (X_SEGMENTS + 1) + x);
+					indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+				}
+			}
+			else
+			{
+				for (int x = X_SEGMENTS; x >= 0; --x)
+				{
+					indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+					indices.push_back(y       * (X_SEGMENTS + 1) + x);
+				}
+			}
+			oddRow = !oddRow;
+		}
+		indexCount = indices.size();
+
+		std::vector<float> data;
+		for (int i = 0; i < positions.size(); ++i)
+		{
+			data.push_back(positions[i].x);
+			data.push_back(positions[i].y);
+			data.push_back(positions[i].z);
+			if (uv.size() > 0)
+			{
+				data.push_back(uv[i].x);
+				data.push_back(uv[i].y);
+			}
+			if (normals.size() > 0)
+			{
+				data.push_back(normals[i].x);
+				data.push_back(normals[i].y);
+				data.push_back(normals[i].z);
+			}
+		}
+		glBindVertexArray(sphereVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+		float stride = (3 + 2 + 3) * sizeof(float);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
+	}
+
+	glBindVertexArray(sphereVAO);
+	glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
+}
+
+void drawSpheres(Shader & a_shader)
+{
+	float nrRows = 7;
+	float nrColumns = 7;
+	float spacing = 2.5;
+
+	glm::mat4 model;
+	a_shader.use();
+	a_shader.setVec3("albedo", 0.5f, 0.0f, 0.0f);
+	for (unsigned int row = 0; row < nrRows; ++row)
+	{
+		a_shader.setFloat("metallic", ((float)row +1)/ (float)nrRows);
+		for (unsigned int col = 0; col < nrColumns; ++col)
+		{
+			// we clamp the roughness to 0.025 - 1.0 as perfectly smooth surfaces (roughness of 0.0) tend to look a bit off
+			// on direct lighting.
+			a_shader.setFloat("roughness", glm::clamp((float)col / (float)nrColumns, 0.05f, 1.0f));
+
+			model = glm::mat4(1);
+			model = glm::translate(model, glm::vec3(
+				(float)(col - (nrColumns / 2)) * spacing,
+				(float)(row - (nrRows / 2)) * spacing,
+				0.0f
+			));
+			a_shader.setMat4("model", model);
+			renderSphere();
+		}
+	}
+}
 void resetRenderState()
 {
 	glEnable(GL_DEPTH_TEST);
@@ -814,13 +905,13 @@ int main()
 	loadShaders();
 
 	prepareVAOs();
-	g_SingleTextureVAO = createSingleTextureVAO();
-	g_ScreenVAO = createScreenVAO();
+	g_SingleTextureVAO = VAOCreater::createSingleTextureVAO(g_QuadVerticesPosAndNormal,sizeof(g_QuadVerticesPosAndNormal), g_indices, sizeof(g_indices));
+	g_ScreenVAO = VAOCreater::createScreenVAO(g_QuadVerticesPosAndTexCoords,sizeof(g_QuadVerticesPosAndTexCoords), g_indices, sizeof(g_indices));
 
 	g_Matrix_UBO = createAndBindUBO(0);
 	g_Common_USE_UBO = createAndBindUBO(1);
 	g_Light_Info_UBO = createAndBindUBO(2,2048);
-
+	g_PBR_Light_Info_UBO = createAndBindUBO(3, 2048);
 
 	vec3 cameraTarget(0.f, 0.f, 0.f);
 	vec3 up(0.f, 1.f, 0.f);
@@ -915,6 +1006,7 @@ int main()
 		drawTextureToScreen(shadowMapTexture, g_OutputTextureRRRProgram);
 #endif
 
+#ifdef draw_shadow
 		//draw point shadow map
 		glViewport(0, 0, shadowMapWidth, shadowMapHeight);
 		glBindFramebuffer(GL_FRAMEBUFFER, pointShadowMapFBO);
@@ -931,11 +1023,18 @@ int main()
 		drawCubes(g_MultiLightingPointShadowProgram);
 		drawFloor(g_MultiLightingPointShadowProgram);
 		drawLamps();
-
+#endif
 		////debug shadow map
 		//glViewport(0, 0, screenWidth / 2, screenHeight / 2);
 		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		//drawTextureToScreen(shadowMapTexture, g_OutputTextureRRRProgram);
+
+
+		glClearColor(0.2f, 0.5f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+		drawSpheres(g_PBRProgram);
+
 
 
 #ifdef RENDER_TO_TEXTURE		//draw the texture

@@ -95,5 +95,8 @@
     <ClInclude Include="UniformBlockDataStruct.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="VAOCreater.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

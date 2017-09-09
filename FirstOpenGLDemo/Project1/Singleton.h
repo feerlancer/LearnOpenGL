@@ -54,7 +54,51 @@
 //	BBB& operator=(const BBB& other) {};
 //};
 
-class singleton
+//class singleton
+//{
+//public:
+//	static void CreateInstance()
+//	{
+//		assert(!m_Instance);
+//		if (!m_Instance)
+//		{
+//			//lock
+//			if (!m_Instance)
+//			{
+//				m_Instance = new singleton;
+//			}
+//			//unlock
+//		}
+//	}
+//	static void DestroyInstance()
+//	{
+//		assert(m_Instance);
+//		if (m_Instance)
+//		{
+//			//lock
+//			if (m_Instance)
+//			{
+//				delete m_Instance;
+//				m_Instance = nullptr;
+//			}
+//			//unlock
+//		}
+//	}
+//	static singleton* GetInstance()
+//	{
+//		assert(m_Instance);
+//		return m_Instance;
+//	}
+//private:
+//	static singleton* m_Instance;
+//protected:
+//	singleton() {};
+//	singleton(const singleton& other) {};
+//	singleton& operator = (const singleton& other) {};
+//};
+//singleton* singleton::m_Instance;
+
+class Singleton
 {
 public:
 	static void CreateInstance()
@@ -65,36 +109,33 @@ public:
 			//lock
 			if (!m_Instance)
 			{
-				m_Instance = new singleton;
+				m_Instance = new Singleton();
 			}
 			//unlock
 		}
+	}
+
+	static Singleton* GetInstance()
+	{
+		assert(m_Instance);
+		return m_Instance;
 	}
 	static void DestroyInstance()
 	{
 		assert(m_Instance);
 		if (m_Instance)
 		{
-			//lock
+			//MutexGuard(mutex)
 			if (m_Instance)
 			{
 				delete m_Instance;
 				m_Instance = nullptr;
 			}
-			//unlock
 		}
 	}
-	static singleton* GetInstance()
-	{
-		assert(m_Instance);
-		return m_Instance;
-	}
 private:
-	static singleton* m_Instance;
-protected:
-	singleton() {};
-	singleton(const singleton& other) {};
-	singleton& operator = (const singleton& other) {};
+	static Singleton *m_Instance;
+	Singleton();
+	Singleton(const Singleton& other);
+	Singleton& operator=(const Singleton& rhs);
 };
-singleton* singleton::m_Instance;
-

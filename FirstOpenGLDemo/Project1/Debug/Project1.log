@@ -1,14 +1,19 @@
 ﻿  Main.cpp
-f:\learnopengl\firstopengldemo\project1\main.cpp(38): warning C4305: 'initializing': truncation from 'double' to 'float'
-f:\learnopengl\firstopengldemo\project1\main.cpp(128): warning C4244: 'argument': conversion from 'double' to 'unsigned int', possible loss of data
-f:\learnopengl\firstopengldemo\project1\main.cpp(197): warning C4305: '+=': truncation from 'double' to 'float'
-f:\learnopengl\firstopengldemo\project1\main.cpp(203): warning C4305: '-=': truncation from 'double' to 'float'
-f:\learnopengl\firstopengldemo\project1\main.cpp(329): warning C4018: '<': signed/unsigned mismatch
-f:\learnopengl\firstopengldemo\project1\main.cpp(438): warning C4305: '*=': truncation from 'double' to 'float'
-f:\learnopengl\firstopengldemo\project1\main.cpp(443): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-f:\learnopengl\firstopengldemo\project1\main.cpp(737): warning C4305: '=': truncation from 'double' to 'float'
-f:\learnopengl\firstopengldemo\project1\main.cpp(738): warning C4305: '=': truncation from 'double' to 'float'
-f:\learnopengl\firstopengldemo\project1\main.cpp(872): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-f:\learnopengl\firstopengldemo\project1\main.cpp(827): warning C4101: 'cameraDirection': unreferenced local variable
+f:\learnopengl\firstopengldemo\project1\main.cpp(39): warning C4305: 'initializing': truncation from 'double' to 'float'
+f:\learnopengl\firstopengldemo\project1\main.cpp(133): warning C4244: 'argument': conversion from 'double' to 'unsigned int', possible loss of data
+f:\learnopengl\firstopengldemo\project1\main.cpp(203): warning C4305: '+=': truncation from 'double' to 'float'
+f:\learnopengl\firstopengldemo\project1\main.cpp(209): warning C4305: '-=': truncation from 'double' to 'float'
+f:\learnopengl\firstopengldemo\project1\main.cpp(336): warning C4018: '<': signed/unsigned mismatch
+f:\learnopengl\firstopengldemo\project1\main.cpp(445): warning C4305: '*=': truncation from 'double' to 'float'
+f:\learnopengl\firstopengldemo\project1\main.cpp(450): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+f:\learnopengl\firstopengldemo\project1\main.cpp(695): warning C4305: '=': truncation from 'double' to 'float'
+f:\learnopengl\firstopengldemo\project1\main.cpp(696): warning C4305: '=': truncation from 'double' to 'float'
+f:\learnopengl\firstopengldemo\project1\main.cpp(750): warning C4305: 'initializing': truncation from 'double' to 'float'
+f:\learnopengl\firstopengldemo\project1\main.cpp(791): warning C4018: '<': signed/unsigned mismatch
+f:\learnopengl\firstopengldemo\project1\main.cpp(815): warning C4244: 'argument': conversion from 'float' to 'GLsizei', possible loss of data
+f:\learnopengl\firstopengldemo\project1\main.cpp(817): warning C4244: 'argument': conversion from 'float' to 'GLsizei', possible loss of data
+f:\learnopengl\firstopengldemo\project1\main.cpp(819): warning C4244: 'argument': conversion from 'float' to 'GLsizei', possible loss of data
+f:\learnopengl\firstopengldemo\project1\main.cpp(963): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+f:\learnopengl\firstopengldemo\project1\main.cpp(918): warning C4101: 'cameraDirection': unreferenced local variable
   Project1.vcxproj -> F:\LearnOpenGL\FirstOpenGLDemo\Debug\Project1.exe
   Project1.vcxproj -> F:\LearnOpenGL\FirstOpenGLDemo\Debug\Project1.pdb (Partial PDB)
